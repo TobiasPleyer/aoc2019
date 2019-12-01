@@ -1,6 +1,5 @@
 module Aoc.Day1
     ( solution
-    , calculateFuel
     ) where
 
 
