@@ -17,6 +17,8 @@ dependencies:
 
 library:
   source-dirs: src
+  dependencies:
+  - array
 
 executables:
   aoc2019-exe:
