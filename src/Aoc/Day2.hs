@@ -6,6 +6,7 @@ module Aoc.Day2
 
 import           Control.Monad                (when)
 import           Control.Monad.ST             (ST(..), runST)
+import           Data.Maybe                   (fromJust)
 import qualified Data.Array.IArray            as I
 import           Data.Array.MArray            (MArray)
 import qualified Data.Array.MArray            as A
@@ -39,15 +40,17 @@ getInput2 = readInts <$> readFile "inputs/day2.txt"
                  . P.readP_to_S (L.readDecP `P.sepBy` (L.expect (L.Punc ",")))
 
 
-run1202Program
+runProgram
   :: MArray a Int m
   => [Int]
   -> Int
+  -> Int
+  -> Int
   -> m (a Int Int)
-run1202Program input maxIterations = do
+runProgram input noun verb maxIterations = do
   initialArray <- A.newListArray (0, length input - 1) input
-  A.writeArray initialArray 1 12
-  A.writeArray initialArray 2 2
+  A.writeArray initialArray 1 noun
+  A.writeArray initialArray 2 verb
   finalArray <- executeProgram initialArray 0 maxIterations
   return finalArray
 
@@ -102,13 +105,27 @@ executeBinOp binOp inputArray instructionIndex = do
 solution_p1 :: [Int] -> IO String
 solution_p1 input = do
   let
-    finalArray = runSTUArray $ run1202Program input (-1)
+    finalArray = runSTUArray $ runProgram input 12 2 (-1)
     value = (I.!) finalArray 0 
   when isDebug (print finalArray)
   return $ show value
 
 
+solution_p2 :: [Int] -> IO String
+solution_p2 input = do
+  let
+    nouns = [0..99]
+    verbs = [0..99]
+    run = \n v -> flip (I.!) 0 $ runSTUArray $ runProgram input n v (-1)
+    mkValue = \(n,v) -> 100*n + v
+    -- We can construct all possible combinations, laziness will ensure that we
+    -- just calculate as much as necessary
+    results = [(run n v, (n,v)) | n <- nouns, v <- verbs]
+    result = lookup 19690720 results
+  return $ show $ mkValue $ fromJust result
+
+
 solution :: IO DailyChallenge
 solution = do
   input <- getInput
-  return $ DailyChallenge (solution_p1 input) Nothing
+  return $ DailyChallenge (solution_p1 input) (Just (solution_p2 input))
