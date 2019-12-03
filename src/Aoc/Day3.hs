@@ -1,6 +1,6 @@
-module Aoc.Day3
-    ( solution
-    ) where
+module Aoc.Day3 where
+--    ( solution
+--    ) where
 
 import           Control.Monad                (when)
 import           Data.Set (Set)
@@ -62,10 +62,10 @@ goDown (x,y) = (x,y-1)
 
 followDirection :: Point Int -> Direction Int -> [Point Int]
 followDirection start dir = case dir of
-  L n -> take (n+1) (iterate goLeft start)
-  R n -> take (n+1) (iterate goRight start)
-  U n -> take (n+1) (iterate goUp start)
-  D n -> take (n+1) (iterate goDown start)
+  L n -> take n (tail $ iterate goLeft start)
+  R n -> take n (tail $ iterate goRight start)
+  U n -> take n (tail $ iterate goUp start)
+  D n -> take n (tail $ iterate goDown start)
 
 center :: Point Int
 center = (0,0)
@@ -75,16 +75,26 @@ manhatten :: Point Int -> Int
 manhatten (x,y) = (abs x) + (abs y)
 
 
-findPoints :: Point Int -> [Direction Int] -> Set (Point Int)
-findPoints = helper S.empty
+mkPointsSet :: Point Int -> [Direction Int] -> Set (Point Int)
+mkPointsSet = helper S.empty
   where
     helper points start [] = points
     helper points start (d:ds) =
       let
-        linePoints = followDirection start d
-        newPoints = tail linePoints
-        endPoint = last linePoints  -- the end will be the next start
+        newPoints = followDirection start d
+        endPoint = last newPoints  -- the end will be the next start
       in helper (S.union points (S.fromList newPoints)) endPoint ds
+
+
+mkPointsList :: Point Int -> [Direction Int] -> [Point Int]
+mkPointsList = helper []
+  where
+    helper points start [] = points
+    helper points start (d:ds) =
+      let
+        newPoints = followDirection start d
+        endPoint = last newPoints  -- the end will be the next start
+      in helper (points ++ newPoints) endPoint ds
 
 
 findCommonPoints :: Set (Point Int) -> Set (Point Int) -> Set (Point Int)
@@ -100,17 +110,38 @@ findSmallestDist :: Set (Point Int) -> Int
 findSmallestDist = manhatten . findClosestPoint
 
 
+countStepsUntilPoint :: Point Int -> [Point Int] -> [Point Int] -> Int
+countStepsUntilPoint target wire1Points wire2Points =
+  let
+    wire1Steps = takeWhile (/= target) wire1Points
+    wire2Steps = takeWhile (/= target) wire2Points
+  -- +2 because takeWhile "forgets" the last step for each wire
+  in (length wire1Steps) + (length wire2Steps) + 2  
+
+
 solution_p1 :: ([Direction Int],[Direction Int]) -> IO String
 solution_p1 (wire1Directions,wire2Directions) = do
   let
-    wire1Points = findPoints center wire1Directions
-    wire2Points = findPoints center wire2Directions
+    wire1Points = mkPointsSet center wire1Directions
+    wire2Points = mkPointsSet center wire2Directions
     minDist = findSmallestDist $ findCommonPoints wire1Points wire2Points
   return $ show minDist
 
---solution_p2 :: [Int] -> IO String
-solution_p2 input = return "N/A"
 
+solution_p2 :: ([Direction Int],[Direction Int]) -> IO String
+solution_p2 (wire1Directions,wire2Directions) = do
+  let
+    wire1Points = mkPointsList center wire1Directions
+    wire2Points = mkPointsList center wire2Directions
+    commonPoints = findCommonPoints (S.fromList wire1Points) (S.fromList wire2Points)
+    wire1Steps = takeWhile (flip S.notMember commonPoints) wire1Points
+    wire2Steps = takeWhile (flip S.notMember commonPoints) wire2Points
+  return $ show (minimum [countStepsUntilPoint t wire1Points wire2Points | t <- (S.toList commonPoints)]) 
+  
+testInput1 = [ [R 98,U 47,R 26,D 63,R 33,U 87,L 62,D 20,R 33,U 53,R 51],
+               [U 98,R 91,D 20,R 16,D 67,R 40,U 7,R 15,U 6,R 7] ]
+testInput2 = [ [R 8, U 5, L 5, D 3],
+               [U 7, R 6, D 4, L 4] ]
 
 solution :: IO DailyChallenge
 solution = do
@@ -119,4 +150,4 @@ solution = do
   let
     wire1 = head input
     wire2 = head $ tail input
-  return $ DailyChallenge (solution_p1 (wire1,wire2)) Nothing
+  return $ DailyChallenge (solution_p1 (wire1,wire2)) (Just (solution_p2 (wire1,wire2)))
