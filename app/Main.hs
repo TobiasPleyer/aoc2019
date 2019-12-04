@@ -9,19 +9,21 @@ import           Aoc.Common (DailyChallenge(..))
 import qualified Aoc as Aoc
 
 
+data SelectionMode
+  = Today
+  | Some [Int]
+  | All
+
+
 printSolution
   :: IntMap DailyChallenge
-  -> C.Day  -- date of the start (1st of December 2019)
-  -> C.Day  -- today's date
+  -> Int    -- date of the start (1st of December 2019)
+  -> Int    -- today's date
   -> Int    -- the number of the day of interest (1 based, not 0)
   -> IO ()  -- the resulting IO action
-printSolution m s t i =
-  let
-    s' = C.getDay s
-    t' = C.getDay t
-  in do
+printSolution m s t i = do
     putStr $ "Day " ++ show i ++ ": "
-    if (s'+i-1 > t')
+    if (s+i-1 > t)
     then putStrLn "Still not unlocked"
     else case IM.lookup i m of
       Just (DailyChallenge p1 mp2) -> do
@@ -35,13 +37,20 @@ printSolution m s t i =
       Nothing -> putStrLn "Not solved yet"
 
 
-startOfAOC2019 = C.Day 58818  -- 1st of December 2019
+startOfAOC2019 = 58818  -- 1st of December 2019
+selectionMode = Today
+--selectionMode = Some [3,4]
+--selectionMode = All
 
 
 main :: IO ()
 main = do
-  t <- C.today
+  t <- C.getDay <$> C.today
   solutions <- Aoc.getSolutions
   putStrLn "Welcome to AOC 2019!"
+  let days = case selectionMode of
+                    Today -> [t - startOfAOC2019 + 1]
+                    Some days -> filter (\d -> (d >= 1) && (d <= 25)) days
+                    All -> [1..25]
   putStrLn "Here is the current status:"
-  sequence_ [printSolution solutions startOfAOC2019 t day | day <- [1..25]]
+  sequence_ [printSolution solutions startOfAOC2019 t day | day <- days]
