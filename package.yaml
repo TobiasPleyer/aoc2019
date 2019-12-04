@@ -19,6 +19,7 @@ library:
   source-dirs: src
   dependencies:
   - array
+  - digits
 
 executables:
   aoc2019-exe:
