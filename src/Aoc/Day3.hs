@@ -1,6 +1,6 @@
-module Aoc.Day3 where
---    ( solution
---    ) where
+module Aoc.Day3
+    ( solution
+    ) where
 
 import           Control.Monad                (when)
 import           Data.Set (Set)
@@ -67,6 +67,7 @@ followDirection start dir = case dir of
   U n -> take n (tail $ iterate goUp start)
   D n -> take n (tail $ iterate goDown start)
 
+
 center :: Point Int
 center = (0,0)
 
@@ -110,8 +111,8 @@ findSmallestDist :: Set (Point Int) -> Int
 findSmallestDist = manhatten . findClosestPoint
 
 
-countStepsUntilPoint :: Point Int -> [Point Int] -> [Point Int] -> Int
-countStepsUntilPoint target wire1Points wire2Points =
+countStepsUntilPoint :: [Point Int] -> [Point Int] -> Point Int -> Int
+countStepsUntilPoint wire1Points wire2Points target =
   let
     wire1Steps = takeWhile (/= target) wire1Points
     wire2Steps = takeWhile (/= target) wire2Points
@@ -134,9 +135,9 @@ solution_p2 (wire1Directions,wire2Directions) = do
     wire1Points = mkPointsList center wire1Directions
     wire2Points = mkPointsList center wire2Directions
     commonPoints = findCommonPoints (S.fromList wire1Points) (S.fromList wire2Points)
-    wire1Steps = takeWhile (flip S.notMember commonPoints) wire1Points
-    wire2Steps = takeWhile (flip S.notMember commonPoints) wire2Points
-  return $ show (minimum [countStepsUntilPoint t wire1Points wire2Points | t <- (S.toList commonPoints)]) 
+    countSteps = countStepsUntilPoint wire1Points wire2Points
+    minSteps = minimum [ countSteps t | t <- (S.toList commonPoints)] 
+  return $ show minSteps
   
 testInput1 = [ [R 98,U 47,R 26,D 63,R 33,U 87,L 62,D 20,R 33,U 53,R 51],
                [U 98,R 91,D 20,R 16,D 67,R 40,U 7,R 15,U 6,R 7] ]
