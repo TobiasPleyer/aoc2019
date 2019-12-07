@@ -10,7 +10,8 @@ import qualified Aoc as Aoc
 
 
 data SelectionMode
-  = Today
+  = UntilToday
+  | OnlyToday
   | Some [Int]
   | All
 
@@ -38,9 +39,7 @@ printSolution m s t i = do
 
 
 startOfAOC2019 = 58818  -- 1st of December 2019
-selectionMode = Today
---selectionMode = Some [3,4]
---selectionMode = All
+selectionMode = UntilToday
 
 
 main :: IO ()
@@ -49,7 +48,8 @@ main = do
   solutions <- Aoc.getSolutions
   putStrLn "Welcome to AOC 2019!"
   let days = case selectionMode of
-                    Today -> [t - startOfAOC2019 + 1]
+                    UntilToday -> [1..(t - startOfAOC2019 + 1)]
+                    OnlyToday -> [t - startOfAOC2019 + 1]
                     Some days -> filter (\d -> (d >= 1) && (d <= 25)) days
                     All -> [1..25]
   putStrLn "Here is the current status:"
