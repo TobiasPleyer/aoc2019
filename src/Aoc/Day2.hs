@@ -5,17 +5,11 @@ module Aoc.Day2
 
 
 import           Control.Monad                (when)
-import           Control.Monad.ST             (ST(..), runST)
 import           Data.Maybe                   (fromJust)
-import qualified Data.Array.IArray            as I
-import           Data.Array.MArray            (MArray)
-import qualified Data.Array.MArray            as A
-import           Data.Array.ST                (STUArray, runSTUArray)
-import qualified Data.Array.ST                as A
 import qualified Text.Read.Lex                as L
 import qualified Text.ParserCombinators.ReadP as P
 
-import Aoc.Common (DailyChallenge(..), isDebug)
+import Aoc.Common (DailyChallenge(..), isDebug, runProgram)
 
 
 -- The simple shortcut: Make the input string a valid list by enclosing it in
@@ -40,75 +34,10 @@ getInput2 = readInts <$> readFile "inputs/day2.txt"
                  . P.readP_to_S (L.readDecP `P.sepBy` (L.expect (L.Punc ",")))
 
 
-runProgram
-  :: MArray a Int m
-  => [Int]
-  -> Int
-  -> Int
-  -> Int
-  -> m (a Int Int)
-runProgram input noun verb maxIterations = do
-  initialArray <- A.newListArray (0, length input - 1) input
-  A.writeArray initialArray 1 noun
-  A.writeArray initialArray 2 verb
-  finalArray <- executeProgram initialArray 0 maxIterations
-  return finalArray
-
-
-executeProgram
-  :: MArray a Int m
-  => a Int Int      -- The input array
-  -> Int            -- The index of the current instruction
-  -> Int            -- The maximum number of iterations performed (<0 means
-                    -- infinitly many)
-  -> m (a Int Int)  -- The resulting array after the instruction was executed
-executeProgram inputArray instructionIndex maxIterations = do
-  if maxIterations == 0
-  then return inputArray
-  else do
-    instruction <- A.readArray inputArray instructionIndex
-    newArray <- executeInstruction inputArray instructionIndex maxIterations instruction
-    return newArray
-
-
-executeInstruction
-  :: MArray a Int m
-  => a Int Int      -- The input array
-  -> Int            -- The index of the current instruction
-  -> Int            -- The maximum number of iterations performed (<0 means
-                    -- infinitly many)
-  -> Int            -- The current instruction value
-  -> m (a Int Int)  -- The resulting array after the instruction was executed
-executeInstruction inputArray instructionIndex maxIterations instruction
-  | instruction == 99 = return inputArray
-  -- addition shall be performed
-  | instruction == 1 = do
-      executeBinOp (+) inputArray instructionIndex
-      executeProgram inputArray (instructionIndex + 4) (maxIterations - 1)
-  -- multiplication shall be performed
-  | instruction == 2 = do
-      executeBinOp (*) inputArray instructionIndex
-      executeProgram inputArray (instructionIndex + 4) (maxIterations - 1)
-  -- unknown instruction - this should never happen!
-  | otherwise = error "Unknown instruction"
-
-
-executeBinOp binOp inputArray instructionIndex = do
-  indexArg1 <- A.readArray inputArray (instructionIndex + 1)
-  indexArg2 <- A.readArray inputArray (instructionIndex + 2)
-  indexTarget <- A.readArray inputArray (instructionIndex + 3)
-  arg1 <- A.readArray inputArray indexArg1
-  arg2 <- A.readArray inputArray indexArg2
-  A.writeArray inputArray indexTarget (binOp arg1 arg2)
-
-
 solution_p1 :: [Int] -> IO String
 solution_p1 input = do
-  let
-    finalArray = runSTUArray $ runProgram input 12 2 (-1)
-    value = (I.!) finalArray 0 
-  when isDebug (print finalArray)
-  return $ show value
+  r <- runProgram input 12 2 (-1)
+  return $ show r
 
 
 solution_p2 :: [Int] -> IO String
@@ -116,11 +45,14 @@ solution_p2 input = do
   let
     nouns = [0..99]
     verbs = [0..99]
-    run = \n v -> flip (I.!) 0 $ runSTUArray $ runProgram input n v (-1)
     mkValue = \(n,v) -> 100*n + v
     -- We can construct all possible combinations, laziness will ensure that we
     -- just calculate as much as necessary
-    results = [(run n v, (n,v)) | n <- nouns, v <- verbs]
+    runProg = \n v -> do
+      r <- runProgram input n v (-1)
+      return (r,(n,v))
+  results <- sequence [runProg n v | n <- nouns, v <- verbs]
+  let
     result = lookup 19690720 results
   return $ show $ mkValue $ fromJust result
 
