@@ -9,7 +9,7 @@ import           Data.Maybe                   (fromJust)
 import qualified Text.Read.Lex                as L
 import qualified Text.ParserCombinators.ReadP as P
 
-import Aoc.Common (DailyChallenge(..), isDebug, runProgram)
+import Aoc.Common (DailyChallenge(..), isDebug, runProgram, ExecutionMode(..))
 
 
 -- The simple shortcut: Make the input string a valid list by enclosing it in
@@ -36,7 +36,7 @@ getInput2 = readInts <$> readFile "inputs/day2.txt"
 
 solution_p1 :: [Int] -> IO String
 solution_p1 input = do
-  r <- runProgram input 12 2 (-1)
+  r <- runProgram (Scripted []) input 12 2 (-1)
   return $ show r
 
 
@@ -49,7 +49,7 @@ solution_p2 input = do
     -- We can construct all possible combinations, laziness will ensure that we
     -- just calculate as much as necessary
     runProg = \n v -> do
-      r <- runProgram input n v (-1)
+      r <- runProgram (Scripted []) input n v (-1)
       return (r,(n,v))
   results <- sequence [runProg n v | n <- nouns, v <- verbs]
   let
