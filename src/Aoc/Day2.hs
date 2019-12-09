@@ -9,7 +9,7 @@ import           Data.Maybe                   (fromJust)
 import qualified Text.Read.Lex                as L
 import qualified Text.ParserCombinators.ReadP as P
 
-import Aoc.Common (DailyChallenge(..), isDebug, runProgram, ExecutionMode(..))
+import Aoc.Common (DailyChallenge(..), isDebug, runProgram, InputMode(..))
 
 
 -- The simple shortcut: Make the input string a valid list by enclosing it in
