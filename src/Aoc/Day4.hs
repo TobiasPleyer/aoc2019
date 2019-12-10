@@ -1,6 +1,6 @@
-module Aoc.Day4 where
---    ( solution
---    ) where
+module Aoc.Day4
+    ( solution
+    ) where
 
 
 import Control.Arrow ((***))

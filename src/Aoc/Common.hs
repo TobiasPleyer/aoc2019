@@ -2,11 +2,14 @@
 module Aoc.Common where
 
 
+import           Control.Monad                (when)
 import qualified Data.Array.IArray            as I
 import           Data.Array.IO                (IOUArray)
 import           Data.Array.MArray            (MArray)
 import qualified Data.Array.MArray            as A
+import qualified Data.Array.Unboxed           as U
 import           Data.Digits                  (digits)
+import qualified System.Console.CmdArgs.Verbosity as V
 
 
 data DailyChallenge =
@@ -40,6 +43,7 @@ runProgram mode input noun verb maxIterations = do
   A.writeArray arr 1 noun
   A.writeArray arr 2 verb
   executeProgram mode arr 0 maxIterations
+  putStrLn ""
   A.readArray arr 0
 
 
@@ -56,11 +60,16 @@ executeProgram inputMode inputArray instructionIndex maxIterations = do
   then return inputArray
   else do
     instruction <- A.readArray inputArray instructionIndex
-    --putStrLn $ "Executing instruction " ++ (show instruction) ++ " at index " ++ (show instructionIndex)
+    isLoud <- V.isLoud
+    when isLoud $ do
+      arr <- A.freeze inputArray :: IO (U.UArray Int Int)
+      print arr
     let
+      opcode = getOpcode instruction
       paramModes = getParameterModes instruction
       getArg n = getArgWithMode inputArray instructionIndex (paramModes !! n) n
-    executeInstruction inputMode getArg inputArray instructionIndex maxIterations instruction
+    when isLoud (putStrLn $ "Executing " ++ (show instruction) ++ " at index " ++ (show instructionIndex))
+    executeInstruction inputMode getArg inputArray instructionIndex maxIterations opcode
 
 
 executeInstruction
@@ -71,22 +80,23 @@ executeInstruction
   -> Int                    -- The index of the current instruction
   -> Int                    -- The maximum number of iterations performed (<0
                             -- means infinitly many)
-  -> Int                    -- The current instruction value
+  -> Int                    -- The current opcode value
   -> IO (IOUArray Int Int)  -- The resulting array after the instruction was executed
-executeInstruction inputMode getArg inputArray instructionIndex maxIterations instruction
-  | instruction == 99 = do
-      --putStrLn "Program finished"
+executeInstruction inputMode getArg inputArray instructionIndex maxIterations opcode
+  | opcode == 99 = do
+      isLoud <- V.isLoud
+      when isLoud (putStrLn "Program finished")
       return inputArray
   -- addition shall be performed
-  | instruction == 1 = do
+  | opcode == 1 = do
       executeBinOp (+) getArg inputArray instructionIndex
       executeProgram inputMode inputArray (instructionIndex + 4) (maxIterations - 1)
   -- multiplication shall be performed
-  | instruction == 2 = do
+  | opcode == 2 = do
       executeBinOp (*) getArg inputArray instructionIndex
       executeProgram inputMode inputArray (instructionIndex + 4) (maxIterations - 1)
-  | instruction == 3 = do
-      indexTarget <- getArg 1
+  | opcode == 3 = do
+      indexTarget <- A.readArray inputArray (instructionIndex+1)
       case inputMode of
         Interactive -> do
           n <- read <$> getLine :: IO Int
@@ -95,27 +105,33 @@ executeInstruction inputMode getArg inputArray instructionIndex maxIterations in
         Scripted (n:ns) -> do
           A.writeArray inputArray indexTarget n
           executeProgram (Scripted ns) inputArray (instructionIndex + 2) (maxIterations - 1)
-  | instruction == 4 = do
-      indexSource <- getArg 1
-      value <- A.readArray inputArray indexSource
+  | opcode == 4 = do
+      value <- getArg 1
       putStr $ (show value) ++ " "
       executeProgram inputMode inputArray (instructionIndex + 2) (maxIterations - 1)
   -- unknown instruction - this should never happen!
-  | otherwise = error $ "Unknown instruction: " ++ show instruction
+  | otherwise = error $ "Unknown opcode: " ++ show opcode
+
+
+getOpcode :: Int -> Int
+getOpcode n = n `mod` 100
 
 
 getParameterModes :: Int -> [Int]
 getParameterModes n = 
-  if n < 10 then repeat 0 else ((++ (repeat 0)) . drop 2 . reverse . digits 10) n
+  -- the zeroth (0th) parameter is always the instruction itself and thus must
+  -- be in immediate mode
+  1 : (if n < 10 then repeat 0 else ((++ (repeat 0)) . drop 2 . reverse . digits 10) n)
 
 
 getArgWithMode arr base mode index = do
+  isLoud <- V.isLoud
   if mode == 0 then do  -- mode 0 == position mode
-    --putStrLn $ "Getting arg " ++ (show index) ++ " in position mode"
+    when isLoud (putStrLn $ "Getting arg " ++ (show index) ++ " in position mode")
     indexArg <- A.readArray arr (base+index)
     A.readArray arr indexArg
   else do  -- immediate mode
-    --putStrLn $ "Getting arg " ++ (show index) ++ " in immediate mode"
+    when isLoud (putStrLn $ "Getting arg " ++ (show index) ++ " in immediate mode")
     A.readArray arr (base+index)
 
 

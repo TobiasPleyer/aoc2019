@@ -19,6 +19,7 @@ library:
   source-dirs: src
   dependencies:
   - array
+  - cmdargs
   - digits
 
 executables:
