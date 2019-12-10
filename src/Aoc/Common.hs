@@ -95,6 +95,7 @@ executeInstruction inputMode getArg inputArray instructionIndex maxIterations op
   | opcode == 2 = do
       executeBinOp (*) getArg inputArray instructionIndex
       executeProgram inputMode inputArray (instructionIndex + 4) (maxIterations - 1)
+  -- read number
   | opcode == 3 = do
       indexTarget <- A.readArray inputArray (instructionIndex+1)
       case inputMode of
@@ -105,10 +106,45 @@ executeInstruction inputMode getArg inputArray instructionIndex maxIterations op
         Scripted (n:ns) -> do
           A.writeArray inputArray indexTarget n
           executeProgram (Scripted ns) inputArray (instructionIndex + 2) (maxIterations - 1)
+  -- print number
   | opcode == 4 = do
       value <- getArg 1
       putStr $ (show value) ++ " "
       executeProgram inputMode inputArray (instructionIndex + 2) (maxIterations - 1)
+  -- jump-if-true
+  | opcode == 5 = do
+      value <- getArg 1
+      if value /= 0
+      then do
+        newIndex <- getArg 2
+        executeProgram inputMode inputArray newIndex (maxIterations - 1)
+      else
+        executeProgram inputMode inputArray (instructionIndex + 3) (maxIterations - 1)
+  -- jump-if-false
+  | opcode == 6 = do
+      value <- getArg 1
+      if value == 0
+      then do
+        newIndex <- getArg 2
+        executeProgram inputMode inputArray newIndex (maxIterations - 1)
+      else
+        executeProgram inputMode inputArray (instructionIndex + 3) (maxIterations - 1)
+  -- less than
+  | opcode == 7 = do
+      v1 <- getArg 1
+      v2 <- getArg 2
+      let r = if v1 < v2 then 1 else 0
+      indexTarget <- A.readArray inputArray (instructionIndex+3)
+      A.writeArray inputArray indexTarget r
+      executeProgram inputMode inputArray (instructionIndex + 4) (maxIterations - 1)
+  -- equals
+  | opcode == 8 = do
+      v1 <- getArg 1
+      v2 <- getArg 2
+      let r = if v1 == v2 then 1 else 0
+      indexTarget <- A.readArray inputArray (instructionIndex+3)
+      A.writeArray inputArray indexTarget r
+      executeProgram inputMode inputArray (instructionIndex + 4) (maxIterations - 1)
   -- unknown instruction - this should never happen!
   | otherwise = error $ "Unknown opcode: " ++ show opcode
 

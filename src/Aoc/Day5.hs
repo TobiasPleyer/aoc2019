@@ -35,7 +35,17 @@ solution_p1 input = do
   return $ show r
 
 
+solution_p2 :: [Int] -> IO String
+solution_p2 input = do
+  V.setVerbosity V.Quiet
+  arr <- mkArray input
+  executeProgram (Scripted [5]) arr 0 (-1)
+  putStrLn ""
+  r <- A.readArray arr 0
+  return $ show r
+
+
 solution :: IO DailyChallenge
 solution = do
   input <- getInput
-  return $ DailyChallenge (solution_p1 input) Nothing
+  return $ DailyChallenge (solution_p1 input) (Just (solution_p2 input))
