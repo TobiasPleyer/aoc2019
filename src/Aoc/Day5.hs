@@ -6,13 +6,9 @@ module Aoc.Day5
 
 import           Control.Monad                (when)
 import qualified Data.Array.MArray            as A
-import           Data.Maybe                   (fromJust)
 import qualified System.Console.CmdArgs.Verbosity as V
-import qualified Text.Read.Lex                as L
-import qualified Text.ParserCombinators.ReadP as P
 
 import Aoc.Common ( DailyChallenge(..)
-                  , isDebug
                   , executeProgram
                   , InputMode(..)
                   , mkArray
